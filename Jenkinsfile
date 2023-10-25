@@ -4,7 +4,10 @@ pipeline {
     stages {
         stage('pull code') {
             steps {
-                git branch: 'main', url: 'https://github.com/lilhammer111/to-persist.git'
+                withCredentials([string(credentialsId: 'github-token-for-gin-test', variable: 'TOKEN')]) {
+                    git branch: 'main', credentialsId: 'github-email-pwd', url: 'https://${TOKEN}@github.com/lilhammer111/to-persist.git'
+                }
+
             }
         }
         stage('build project') {
