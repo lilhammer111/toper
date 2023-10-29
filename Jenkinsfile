@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('pull code') {
             steps {
-                withCredentials([string(credentialsId: 'github-token-for-gin-test', variable: 'TOKEN')]) {
+                withCredentials([string(credentialsId: 'github-Token-for-gin-test', variable: 'TOKEN')]) {
                     git branch: 'main', credentialsId: 'github-email-pwd', url: 'https://${TOKEN}@github.com/lilhammer111/to-persist.git'
                 }
 

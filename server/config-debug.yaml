@@ -1,0 +1,14 @@
+mysql-config:
+  username: root
+  password: root
+  db-name: toper
+  addr-config:
+    host: 127.0.0.1
+    port: 3306
+redis-config:
+  expire: 300
+  addr-config:
+    host: 127.0.0.1
+    port: 6379
+jwt-config:
+  jwt-key: fb847da2b56de58b27c7c4aaeff1504a3bd3477008c4e4103168328401ae90ad
