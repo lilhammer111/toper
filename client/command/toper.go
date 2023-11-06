@@ -2,35 +2,40 @@ package command
 
 import (
 	"github.com/spf13/cobra"
-	"time"
 	"to-persist/client/handler"
-	"to-persist/client/model"
 )
 
 func init() {
-	rootCmd.AddCommand(persistCmd, doneCmd)
+	rootCmd.AddCommand(persistCmd, doneCmd, listCmd, historyCmd)
 
-	persistCmd.Flags().DurationVarP(&toperFlags.Period, "period", "p", 24*time.Hour, "Duration between each perseverance")
-	persistCmd.Flags().StringVarP(&toperFlags.DueDate, "due-date", "d", "", "Due date with a specific time (format: 2006-01-02T15:04:05)")
-	persistCmd.Flags().StringVarP(&toperFlags.Acronym, "acronym", "a", "", "")
+	persistCmd.Flags().StringP("period", "p", "everyday",
+		`Duration between each perseverance
+(You can use 1-7 for Monday through Sunday, 
+and if there is more than one cycle, 
+you can separate them with commas, e.g. 1,3,5.
+If you need to persist something every day you can use 'everyday' to represent.
+)`)
+	persistCmd.Flags().StringP("due-date", "d", "", "Due date with a specific time (format: 2006-01-02T15:04:05)")
+	persistCmd.Flags().StringP("acronym", "a", "", "")
 }
 
 var (
-	toperFlags model.ToperFlags
-	// toper persist "reading excellent open source projects" -a rsc
+
+	// toper persist "reading excellent open source projects" -a rsc -p Sunday
 	persistCmd = &cobra.Command{
 		Use:   "persist <doing something>",
 		Short: "Set a daily perseverance item",
-		Long: `The 'persist' command allows you to set a daily perseverance item, 
+		Long: `The 'persist' command allows you to set daily perseverance items, 
+				each of which is referred to as a 'toper', 
 				emphasizing consistency and commitment.
 				You can specify the duration between each perseverance 
 				and a due date for a specific target.`,
-		Run: handler.Set,
+		Run: handler.Create,
 	}
 
 	// toper done rsc ng ...
 	doneCmd = &cobra.Command{
-		Use:   "done <item1 acronym> <item2 acronym> ...",
+		Use:   "done <toper1 acronym> <toper2 acronym> ...",
 		Short: "Mark a daily perseverance item as completed",
 		Long: `The 'done' command allows you to mark a specific daily perseverance item as completed for today. 
 				This helps in tracking your consistency and commitment towards the set goals.`,
@@ -61,13 +66,13 @@ var (
 	//    笔记或注解：与该坚持事项相关的任何额外信息或注释。
 
 	// toper detail rsc
-	detailCmd = &cobra.Command{
-		Use:   "detail",
+	historyCmd = &cobra.Command{
+		Use:   "history <toper acronym>",
 		Short: "Display details of a perseverance item",
 		Long: `The 'detail' command provides an in-depth view of a specific perseverance item.
 				It showcases all the information associated with the item, 
 				such as its title, creation date,
 				last completed date, total days persisted, and any notes or annotations.`,
-		Run: handler.List,
+		Run: handler.History,
 	}
 )

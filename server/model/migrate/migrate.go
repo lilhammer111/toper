@@ -35,25 +35,30 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	tableExist = false
+	if tableExist {
 
-	//err = db.AutoMigrate(&model.User{})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-
-	// 加密密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("pwd132456"), bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	newPassword := string(hashedPassword)
-	for i := 0; i < 10; i++ {
-		user := model.User{
-			Mobile:   fmt.Sprintf("1953587698%d", i),
-			Password: newPassword,
-			Username: fmt.Sprintf("lilhammer11%d", i),
+		hashedPassword, e := bcrypt.GenerateFromPassword([]byte("12345678"), bcrypt.DefaultCost)
+		if e != nil {
+			log.Fatal(e)
 		}
-		db.Save(&user)
+
+		newPassword := string(hashedPassword)
+		for i := 0; i < 10; i++ {
+			user := model.User{
+				Mobile:   fmt.Sprintf("1953587698%d", i),
+				Password: newPassword,
+				Username: fmt.Sprintf("lilhammer11%d", i),
+			}
+			db.Save(&user)
+		}
+	} else {
+		//err = db.AutoMigrate(&model.User{})
+		err = db.AutoMigrate(&model.Task{})
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
+
+var tableExist bool

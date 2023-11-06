@@ -17,6 +17,7 @@ func Routers() *gin.Engine {
 	ApiGroup.GET("/sms", api.SendSms)
 
 	routers.InitUserRoutes(ApiGroup)
+	routers.InitToperRoutes(ApiGroup)
 
 	return r
 }

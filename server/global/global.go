@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"os"
@@ -9,7 +10,8 @@ import (
 )
 
 var (
-	DB *gorm.DB
+	MysqlDB     *gorm.DB
+	RedisClient *redis.Client
 
 	Config = &config.ServerConfig{}
 

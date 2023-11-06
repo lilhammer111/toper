@@ -38,7 +38,8 @@ var (
 		Short: "Log in to your account",
 		Long: `The 'login' command lets you access your Toper account.
 				You'll need to provide your registered username and password to authenticate and gain access.`,
-		Run: handler.Login,
+		Args: cobra.NoArgs,
+		Run:  handler.Login,
 	}
 
 	logoutCmd = &cobra.Command{

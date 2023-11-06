@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -14,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DB() {
+func MysqlDB() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		global.Config.MysqlConfig.Username,
 		global.Config.MysqlConfig.Password,
@@ -35,7 +36,7 @@ func DB() {
 	)
 
 	var err error
-	global.DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+	global.MysqlDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 		Logger:         newLogger,
 	})
@@ -43,4 +44,14 @@ func DB() {
 	if err != nil {
 		zap.S().Panic("failed to init db, because ", err.Error())
 	}
+
+}
+
+func RedisClient() {
+	global.RedisClient = redis.NewClient(&redis.Options{
+		Addr: fmt.Sprintf("%s:%s",
+			global.Config.RedisConfig.AddrConfig.Host,
+			global.Config.RedisConfig.AddrConfig.Port,
+		),
+	})
 }

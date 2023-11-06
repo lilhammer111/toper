@@ -8,10 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"to-persist/client/global"
+	"to-persist/client/util"
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig, util.InitLogger)
 	rootCmd.Flags().StringVar(&ConfigFilePath,
 		"config",
 		"",

@@ -20,7 +20,37 @@ func GetUserList(c *gin.Context) {
 
 }
 
-func LoginByPWD(c *gin.Context) {
+func Login(c *gin.Context) {
+	loginForm := form.LoginForm{}
+	err := c.ShouldBind(&loginForm)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user := model.User{}
+	// check password
+	if res := global.MysqlDB.Where("username = ?", loginForm.Name).First(&user); res.RowsAffected == 0 {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginForm.Password))
+	if err != nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	token, err := GenerateToken(user.Model.ID)
+	if err != nil {
+		zap.S().Error("failed to generate token, because ", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 
 }
 
@@ -29,7 +59,7 @@ func Register(c *gin.Context) {
 	registerForm := form.RegisterForm{}
 	err := c.ShouldBind(&registerForm)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -47,25 +77,27 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	user := model.User{}
+
+	if res := global.MysqlDB.Where("mobile = ?", registerForm.Mobile).First(&user); res.RowsAffected != 0 {
+		c.Status(http.StatusConflict)
+		return
+	}
+
+	//Username: registerForm.Name,
+	//	Mobile:   registerForm.Mobile,
+	//		Password: registerForm.Password,
+	user.Username = registerForm.Name
+	user.Mobile = registerForm.Mobile
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerForm.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	registerForm.Password = string(hashedPassword)
+	user.Password = string(hashedPassword)
 
-	user := model.User{
-		Username: registerForm.Name,
-		Mobile:   registerForm.Mobile,
-		Password: registerForm.Password,
-	}
-
-	if res := global.DB.Where("mobile = ?", registerForm.Mobile).First(&user); res.RowsAffected != 0 {
-		c.Status(http.StatusConflict)
-		return
-	}
-
-	if res := global.DB.Create(&user); res.RowsAffected == 0 {
+	if res := global.MysqlDB.Create(&user); res.RowsAffected == 0 {
 		zap.S().Error("res err:", res.Error.Error())
 		c.Status(http.StatusInternalServerError)
 		return
