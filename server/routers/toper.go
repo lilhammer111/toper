@@ -9,9 +9,10 @@ import (
 func InitToperRoutes(APIGroup *gin.RouterGroup) {
 	UserGroup := APIGroup.Group("toper").Use(middlewares.JwtAuth())
 	{
-		UserGroup.POST("", api.Create)
 		UserGroup.GET("", api.List)
-		UserGroup.GET("/:id", api.History)
-		UserGroup.PUT("/:id", api.Alter)
+		UserGroup.POST("", api.Create)
+		UserGroup.POST("/status", api.Done)
+		UserGroup.GET("/history", api.History)
+		UserGroup.PUT("/:acronym", api.Alter)
 	}
 }

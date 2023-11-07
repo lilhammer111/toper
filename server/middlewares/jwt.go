@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"to-persist/server/global"
@@ -13,7 +14,7 @@ var (
 	TokenExpired     = errors.New("token is expired")
 	TokenNotValidYet = errors.New("token not active yet")
 	TokenMalformed   = errors.New("that's not even a token")
-	TokenInvalid     = errors.New("couldn't handle this token: ")
+	TokenInvalid     = errors.New("couldn't handle this token")
 )
 
 func JwtAuth() gin.HandlerFunc {
@@ -21,6 +22,7 @@ func JwtAuth() gin.HandlerFunc {
 		token := c.Request.Header.Get("Authorization")
 
 		if token == "" {
+			zap.S().Error("no token")
 			c.Status(http.StatusUnauthorized)
 			c.Abort()
 			return
@@ -32,6 +34,7 @@ func JwtAuth() gin.HandlerFunc {
 		if err != nil {
 			// If we are not just returning a status code,
 			// we need to respond with different messages depending on the type of the error
+			zap.S().Errorf("failed to parse token : %v", err)
 			c.Status(http.StatusUnauthorized)
 			c.Abort()
 			return
@@ -45,7 +48,7 @@ func JwtAuth() gin.HandlerFunc {
 func ParseToken(tokenStr string) (*jwt.StandardClaims, error) {
 	// Parse the JWT token with the standard claims structure.
 	token, err := jwt.ParseWithClaims(tokenStr, &jwt.StandardClaims{}, func(token *jwt.Token) (any, error) {
-		return []byte(global.Config.JwtConfig.JwtKey), nil
+		return []byte(global.ServerConfig.JwtConfig.JwtKey), nil
 	})
 
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(loginCmd, logoutCmd, registerCmd)
+	rootCmd.AddCommand(loginCmd, logoutCmd, registerCmd, userCmd)
 
 	//registerCmd.Flags().StringVar(&global.UserFlags.Mobile, "mobile", "", "Phone number for registration")
 	registerCmd.Flags().String("mobile", "", "Phone number for registration")
@@ -50,5 +50,15 @@ var (
 				It's a good practice to log out when you're done using the application, 
 				especially on shared machines.`,
 		Run: handler.Logout,
+	}
+
+	userCmd = &cobra.Command{
+		Use:   "user",
+		Short: "Show current user information",
+		Long: `The 'logout' command ends your current Toper session, 
+				ensuring that no unauthorized actions can be taken on your behalf.
+				It's a good practice to log out when you're done using the application, 
+				especially on shared machines.`,
+		Run: handler.Detail,
 	}
 )

@@ -9,11 +9,16 @@ import (
 	"to-persist/server/config"
 )
 
+const (
+	ToperStatusUndone = "undone"
+	ToperStatusDone   = "done"
+)
+
 var (
 	MysqlDB     *gorm.DB
 	RedisClient *redis.Client
 
-	Config = &config.ServerConfig{}
+	ServerConfig = &config.ServerConfig{}
 
 	Debugging       bool
 	AccessKeyId     string

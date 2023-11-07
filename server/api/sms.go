@@ -67,11 +67,11 @@ func SendSms(c *gin.Context) {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s",
-			global.Config.RedisConfig.AddrConfig.Host,
-			global.Config.RedisConfig.AddrConfig.Port,
+			global.ServerConfig.RedisConfig.AddrConfig.Host,
+			global.ServerConfig.RedisConfig.AddrConfig.Port,
 		),
 	})
-	rdb.Set(context.Background(), mobile, smsCode, time.Duration(global.Config.RedisConfig.Expire)*time.Second)
+	rdb.Set(context.Background(), mobile, smsCode, time.Duration(global.ServerConfig.RedisConfig.Expire)*time.Second)
 
 	c.Status(http.StatusOK)
 }

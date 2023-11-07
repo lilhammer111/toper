@@ -12,20 +12,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"to-persist/client/constant"
+	"to-persist/client/constants"
+	"to-persist/client/form"
 	"to-persist/client/global"
 	"to-persist/client/util"
-)
-
-const (
-	Sunday    = 1 << iota // 1 (binary: 0000001)
-	Monday                // 2 (binary: 0000010)
-	Tuesday               // 4 (binary: 0000100)
-	Wednesday             // 8 (binary: 0001000)
-	Thursday              // 16 (binary: 0010000)
-	Friday                // 32 (binary: 0100000)
-	Saturday              // 64 (binary: 1000000)
-	Everyday
 )
 
 type Toper struct {
@@ -55,14 +45,14 @@ func Create(cmd *cobra.Command, args []string) {
 	toper.Acronym, err = cmd.Flags().GetString("acronym")
 	if err != nil {
 		zap.S().Error("failed to get acronym flag")
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
 	toper.Period, err = cmd.Flags().GetString("period")
 	if err != nil {
 		zap.S().Error("failed to get period flag")
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -70,69 +60,158 @@ func Create(cmd *cobra.Command, args []string) {
 	toper.DueDate, err = cmd.Flags().GetString("due-date")
 	if err != nil {
 		zap.S().Error("failed to get due-date flag")
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
-	resp, err := util.Request2(http.MethodPost, global.Config.Url.Base+global.Config.Url.Toper, toper, true)
+	resp, err := util.Request2(http.MethodPost, global.ClientConfig.Url.Root+global.ClientConfig.Url.Toper, toper, nil, true)
 	if err != nil {
 		zap.S().Error(err)
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		fmt.Println("The toper was created successfully, and you can view your toper with the list command.")
+		fmt.Println(constants.OKReply)
 	case http.StatusBadRequest:
-		fmt.Println("Bad request. Please check the information you provided.")
+		fmt.Println(constants.BadRequestReply)
 	case http.StatusUnauthorized:
-		fmt.Println("Authentication failed. Please login first.")
+		fmt.Println(constants.UnauthorizedReply)
 	default:
-		fmt.Println("An unexpected error occurred. Please try again later.")
+		fmt.Println(constants.DefaultErrorReply)
 	}
 
 }
 
+// toper done rsc ng ...
+
 func Done(cmd *cobra.Command, args []string) {
+	var request []form.DoneRequest
+	for _, arg := range args {
+		request = append(request, form.DoneRequest{Acronym: arg})
+	}
+
+	resp, err := util.Request2(http.MethodPost, global.ClientConfig.Url.Root+global.ClientConfig.Url.Done, request, nil, true)
+	if err != nil {
+		zap.S().Errorf("failed to get response from done api: %v", err)
+		fmt.Println(constants.InternalErrorReply)
+		os.Exit(1)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		fmt.Println(constants.OKReply)
+	case http.StatusBadRequest:
+		fmt.Println(constants.BadRequestReply)
+	case http.StatusUnauthorized:
+		fmt.Println(constants.UnauthorizedReply)
+	default:
+		fmt.Println(constants.DefaultErrorReply)
+	}
 
 }
 
 func List(cmd *cobra.Command, args []string) {
-	resp, err := util.Request2(http.MethodGet, global.Config.Url.Base+global.Config.Url.Toper, nil, true)
+	resp, err := util.Request2(http.MethodGet, global.ClientConfig.Url.Root+global.ClientConfig.Url.Toper, nil, nil, true)
 	if err != nil {
-		zap.S().Error(err)
-		fmt.Println(constant.InternalError)
-		os.Exit(1)
-	}
-
-	respJson, err := io.ReadAll(resp.Body)
-	if err != nil {
-		zap.S().Error(err)
-		fmt.Println(constant.InternalError)
-		os.Exit(1)
-	}
-
-	listResponses := make([]ListResp, 0)
-	err = json.Unmarshal(respJson, &listResponses)
-	if err != nil {
-		zap.S().Error(err)
-		fmt.Println(constant.InternalError)
+		zap.S().Errorf("failed to invoke list api: %v", err)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
+		respJson, err := io.ReadAll(resp.Body)
+		if err != nil {
+			zap.S().Error(err)
+			fmt.Println(constants.InternalErrorReply)
+			os.Exit(1)
+		}
+
+		listResponses := make([]ListResp, 0)
+		err = json.Unmarshal(respJson, &listResponses)
+		if err != nil {
+			zap.S().Error(err)
+			fmt.Println(constants.InternalErrorReply)
+			os.Exit(1)
+		}
 		showInTable(listResponses)
 	case http.StatusUnauthorized:
-		fmt.Println("Authentication failed, please login first.")
+		fmt.Println(constants.UnauthorizedReply)
+	case http.StatusBadRequest:
+		fmt.Println(constants.BadRequestReply)
 	default:
-		fmt.Println("An unexpected error occurred. Please try again later.")
+		fmt.Println(constants.DefaultErrorReply)
 	}
 }
 
-func History(cmd *cobra.Command, args []string) {
+// toper history ng -n 20
 
+type historyResp struct {
+	ID       int    `json:"-"`
+	DoneTime string `json:"done-time"`
+	ToperID  string `json:"toper-id"`
+	Acronym  string `json:"acronym"`
+	Done     string `json:"done"`
+}
+
+func History(cmd *cobra.Command, args []string) {
+	historyUrl := global.ClientConfig.Url.History
+	limit, err := cmd.Flags().GetString("limit")
+	if err != nil {
+		zap.S().Error("failed to get limit flag")
+		fmt.Println(constants.InternalErrorReply)
+		os.Exit(1)
+	}
+	queryParams := map[string]string{
+		"acronym": args[0],
+		"limit":   limit,
+	}
+	resp, err := util.Request2(http.MethodGet, global.ClientConfig.Url.Root+historyUrl, nil, queryParams, true)
+	if err != nil {
+		zap.S().Error(err)
+		fmt.Println(constants.InternalErrorReply)
+		os.Exit(1)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		respJson, err := io.ReadAll(resp.Body)
+		if err != nil {
+			zap.S().Error(err)
+			fmt.Println(constants.InternalErrorReply)
+			os.Exit(1)
+		}
+
+		historyResponses := make([]historyResp, 0)
+		err = json.Unmarshal(respJson, &historyResponses)
+		if err != nil {
+			zap.S().Error(err)
+			fmt.Println(constants.InternalErrorReply)
+			os.Exit(1)
+		}
+		table := tablewriter.NewWriter(os.Stdout)
+
+		if len(historyResponses) == 0 {
+			fmt.Println(constants.NoDataReply)
+			return
+		}
+
+		headers := getStructFieldNames(historyResponses[0])
+		table.SetHeader(headers)
+		for i, data := range historyResponses {
+			id := strconv.FormatInt(int64(i+1), 10)
+			table.Append([]string{id, data.DoneTime, data.ToperID, data.Acronym, data.Done})
+		}
+		table.Render()
+	case http.StatusUnauthorized:
+		fmt.Println(constants.UnauthorizedReply)
+	case http.StatusBadRequest:
+		fmt.Println(constants.BadRequestReply)
+	default:
+		fmt.Println(constants.DefaultErrorReply)
+	}
 }
 
 func showInTable(listResponses []ListResp) {
@@ -156,51 +235,4 @@ func getStructFieldNames(item interface{}) []string {
 	}
 
 	return names
-}
-
-var periodMeanings = map[int]string{
-	Sunday:    "Sunday",
-	Monday:    "Monday",
-	Tuesday:   "Tuesday",
-	Wednesday: "Wednesday",
-	Thursday:  "Thursday",
-	Friday:    "Friday",
-	Saturday:  "Saturday",
-}
-
-var periodFlag = map[string]int{
-	"sunday":    Sunday,
-	"monday":    Monday,
-	"tuesday":   Tuesday,
-	"wednesday": Wednesday,
-	"thursday":  Thursday,
-	"friday":    Friday,
-	"saturday":  Saturday,
-}
-
-func periodToString(period int) string {
-	var periods []string
-	if period&Sunday != 0 {
-		periods = append(periods, periodMeanings[Sunday])
-	}
-	if period&Monday != 0 {
-		periods = append(periods, periodMeanings[Monday])
-	}
-	if period&Tuesday != 0 {
-		periods = append(periods, periodMeanings[Tuesday])
-	}
-	if period&Wednesday != 0 {
-		periods = append(periods, periodMeanings[Wednesday])
-	}
-	if period&Thursday != 0 {
-		periods = append(periods, periodMeanings[Thursday])
-	}
-	if period&Friday != 0 {
-		periods = append(periods, periodMeanings[Friday])
-	}
-	if period&Saturday != 0 {
-		periods = append(periods, periodMeanings[Saturday])
-	}
-
-	return strings.Join(periods, ", ")
 }

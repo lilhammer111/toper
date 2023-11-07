@@ -40,7 +40,7 @@ func initConfig() {
 		// os.Exit(1)
 	}
 
-	err := viper.Unmarshal(global.Config)
+	err := viper.Unmarshal(global.ClientConfig)
 	if err != nil {
 		zap.S().Panicf("Failed to unmarshal global config: %s \n", err.Error())
 	}

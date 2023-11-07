@@ -13,7 +13,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"to-persist/client/constant"
+	"to-persist/client/constants"
 	"to-persist/client/form"
 	"to-persist/client/global"
 	"to-persist/client/util"
@@ -41,13 +41,13 @@ func RequestToSendSms(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
-	resp, err := util.Request(http.MethodGet, global.Config.Url.Base+global.Config.Url.Sms+fmt.Sprintf("?mobile=%s", mobile), nil, false)
+	resp, err := util.Request(http.MethodGet, global.ClientConfig.Url.Root+global.ClientConfig.Url.Sms+fmt.Sprintf("?mobile=%s", mobile), nil, false)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -75,7 +75,7 @@ func Register(cmd *cobra.Command, args []string) {
 enterPassword:
 	pwd, err := gopass.GetPasswd() // This will not echo the password while typing
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -93,13 +93,13 @@ enterPassword:
 
 	userRequest, err := json.Marshal(user)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
-	resp, err := util.Request(http.MethodPost, global.Config.Url.Base+global.Config.Url.Register, bytes.NewReader(userRequest), false)
+	resp, err := util.Request(http.MethodPost, global.ClientConfig.Url.Root+global.ClientConfig.Url.Register, bytes.NewReader(userRequest), false)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -108,7 +108,7 @@ enterPassword:
 	// Set Token
 	respJson, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -118,14 +118,14 @@ enterPassword:
 	var tokenResp tokenResponse
 	err = json.Unmarshal(respJson, &tokenResp)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 	viper.Set("token", tokenResp.Token)
 	// 将更改写回原配置文件
 	err = viper.WriteConfig()
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		zap.S().Error("Error writing to config file:", err)
 		os.Exit(1)
 	}
@@ -152,13 +152,13 @@ func Login(cmd *cobra.Command, args []string) {
 	pwd, err := gopass.GetPasswd() // This will not echo the password while typing
 	if err != nil {
 		zap.S().Error("failed to get password, because ", err)
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 	user.Password = string(pwd)
 
 	// todo Use the password, e.g., authenticate against a server
-	resp, err := util.Request2(http.MethodPost, global.Config.Url.Base+global.Config.Url.Login, user, false)
+	resp, err := util.Request2(http.MethodPost, global.ClientConfig.Url.Root+global.ClientConfig.Url.Login, user, nil, false)
 
 	zap.S().Info("login response status: ", resp.Status)
 	zap.S().Infof("login response body: %+v", resp.Body)
@@ -166,7 +166,7 @@ func Login(cmd *cobra.Command, args []string) {
 	err = saveToken(resp)
 	if err != nil {
 		zap.S().Errorf("failed to save token : %s", err)
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		os.Exit(1)
 	}
 
@@ -184,6 +184,10 @@ func Login(cmd *cobra.Command, args []string) {
 }
 
 func Logout(cmd *cobra.Command, args []string) {
+
+}
+
+func Detail(cmd *cobra.Command, args []string) {
 
 }
 
@@ -225,20 +229,20 @@ func validatePassword(pwd []byte) bool {
 func saveToken(resp *http.Response) error {
 	respJson, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		return err
 	}
 	var tokenResp tokenResponse
 	err = json.Unmarshal(respJson, &tokenResp)
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		return err
 	}
 	viper.Set("token", tokenResp.Token)
 	// 将更改写回原配置文件
 	err = viper.WriteConfig()
 	if err != nil {
-		fmt.Println(constant.InternalError)
+		fmt.Println(constants.InternalErrorReply)
 		zap.S().Error("Error writing to config file:", err)
 		return err
 	}

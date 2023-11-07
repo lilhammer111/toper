@@ -23,11 +23,11 @@ func Config() {
 		zap.S().Panic("failed to read config file, because ", err.Error())
 	}
 
-	err = v.Unmarshal(&global.Config)
+	err = v.Unmarshal(&global.ServerConfig)
 	if err != nil {
 		zap.S().Panic("failed to read config file, because ", err.Error())
 	}
 
-	zap.S().Infof("server config is %+v", global.Config)
+	zap.S().Infof("server config is %+v", global.ServerConfig)
 
 }

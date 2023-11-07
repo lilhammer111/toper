@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Config     = &config.Config{}
+	ClientConfig = &config.Config{}
+
 	HttpClient = &http.Client{
 		Timeout: 5 * time.Second,
 	}

@@ -65,8 +65,8 @@ func Register(c *gin.Context) {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s",
-			global.Config.RedisConfig.AddrConfig.Host,
-			global.Config.RedisConfig.AddrConfig.Port,
+			global.ServerConfig.RedisConfig.AddrConfig.Host,
+			global.ServerConfig.RedisConfig.AddrConfig.Port,
 		),
 	})
 
@@ -126,5 +126,5 @@ func GenerateToken(userID uint) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte(global.Config.JwtConfig.JwtKey))
+	return token.SignedString([]byte(global.ServerConfig.JwtConfig.JwtKey))
 }

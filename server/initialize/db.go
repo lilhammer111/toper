@@ -17,11 +17,11 @@ import (
 
 func MysqlDB() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		global.Config.MysqlConfig.Username,
-		global.Config.MysqlConfig.Password,
-		global.Config.MysqlConfig.AddrConfig.Host,
-		global.Config.MysqlConfig.AddrConfig.Port,
-		global.Config.MysqlConfig.DBName,
+		global.ServerConfig.MysqlConfig.Username,
+		global.ServerConfig.MysqlConfig.Password,
+		global.ServerConfig.MysqlConfig.AddrConfig.Host,
+		global.ServerConfig.MysqlConfig.AddrConfig.Port,
+		global.ServerConfig.MysqlConfig.DBName,
 	)
 
 	newLogger := logger.New(
@@ -42,7 +42,7 @@ func MysqlDB() {
 	})
 
 	if err != nil {
-		zap.S().Panic("failed to init db, because ", err.Error())
+		zap.S().Panicf("failed to init db, because: %v ", err)
 	}
 
 }
@@ -50,8 +50,8 @@ func MysqlDB() {
 func RedisClient() {
 	global.RedisClient = redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s",
-			global.Config.RedisConfig.AddrConfig.Host,
-			global.Config.RedisConfig.AddrConfig.Port,
+			global.ServerConfig.RedisConfig.AddrConfig.Host,
+			global.ServerConfig.RedisConfig.AddrConfig.Port,
 		),
 	})
 }

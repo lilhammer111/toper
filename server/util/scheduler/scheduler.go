@@ -25,6 +25,7 @@ func NewTaskScheduler() *TaskScheduler {
 		instance = &TaskScheduler{
 			cr:    cron.New(),
 			tasks: make(map[string]cron.EntryID),
+			mu:    sync.Mutex{},
 		}
 	})
 	return instance
@@ -102,40 +103,31 @@ func (ts *TaskScheduler) ReInitTasksFromDB() error {
 		zap.S().Errorf("failed to count the number of tasks: %v", err)
 		return err
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	ch := make(chan []model.Task)
-	go func() {
-		defer wg.Done()
-		for tasks := range ch {
-			for _, task := range tasks {
-				entryID, err := ts.cr.AddFunc(task.Expression, TaskFunctionsMap[task.TaskFuncType](task.ToperID))
-				if err != nil {
-					// todo : record the failure operation and retry later instead of breaking for loop
-					zap.S().Errorf("failed to init task %s: %v", task.ToperID, err)
-					continue
-				}
-
-				ts.mu.Lock()
-				ts.tasks[task.ToperID] = entryID
-				ts.mu.Unlock()
-			}
-		}
-	}()
-
 	batchSize := 100
+
 	for offset := 0; offset < int(total); offset += batchSize {
 		var tasks []model.Task
+
 		err = global.MysqlDB.Limit(batchSize).Offset(offset).Find(&tasks).Error
 		if err != nil {
 			zap.S().Errorf("failed to init tasks: %v", err)
 			return err
 		}
 
-		ch <- tasks
+		for _, task := range tasks {
+			entryID, err := ts.cr.AddFunc(task.Expression, TaskFunctionsMap[task.TaskFuncType](task.ToperID))
+			if err != nil {
+				// todo : record the failure operation and retry later instead of breaking for loop
+				zap.S().Errorf("failed to init task %s: %v", task.ToperID, err)
+				continue
+			}
+
+			ts.mu.Lock()
+			ts.tasks[task.ToperID] = entryID
+			ts.mu.Unlock()
+		}
+
 	}
-	close(ch)
-	wg.Wait()
+
 	return nil
 }

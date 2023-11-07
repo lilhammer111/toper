@@ -2,6 +2,7 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 type Toper struct {
@@ -16,10 +17,9 @@ type Toper struct {
 }
 
 type DoneHistory struct {
-	gorm.Model
-	ToperID uint   `gorm:"not null"`
-	UserID  uint   `gorm:"not null"`
-	Acronym string `gorm:"type:varchar(10)"`
-	Desc    string
-	Done    bool
+	ID       int       `gorm:"primaryKey;type:int" json:"-"`
+	DoneTime time.Time `gorm:"autoCreateTime;not null" json:"done-time"`
+	ToperID  uint      `gorm:"not null" json:"toper-id"`
+	Acronym  string    `gorm:"type:varchar(10);not null" json:"acronym"`
+	Done     string    `gorm:"not null" json:"done"`
 }

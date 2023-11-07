@@ -17,6 +17,7 @@ If you need to persist something every day you can use 'everyday' to represent.
 )`)
 	persistCmd.Flags().StringP("due-date", "d", "", "Due date with a specific time (format: 2006-01-02T15:04:05)")
 	persistCmd.Flags().StringP("acronym", "a", "", "")
+	historyCmd.Flags().StringP("limit", "l", "10", "")
 }
 
 var (

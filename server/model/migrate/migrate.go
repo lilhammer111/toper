@@ -54,7 +54,7 @@ func main() {
 		}
 	} else {
 		//err = db.AutoMigrate(&model.User{})
-		err = db.AutoMigrate(&model.Task{})
+		err = db.AutoMigrate(&model.DoneHistory{})
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -6,13 +6,13 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"os"
-	"to-persist/client/constant"
+	"to-persist/client/constants"
 	"to-persist/client/global"
 	"to-persist/client/util"
 )
 
 func Ping(cmd *cobra.Command, args []string) {
-	resp, err := util.Request(http.MethodGet, global.Config.Url.Base+global.Config.Url.Ping, nil, false)
+	resp, err := util.Request(http.MethodGet, global.ClientConfig.Url.Root+global.ClientConfig.Url.Ping, nil, false)
 	if err != nil {
 		zap.S().Error("failed to get response, because ", err.Error())
 		fmt.Println("nobody there")
@@ -24,7 +24,7 @@ func Ping(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Println(constant.InternalError)
+	fmt.Println(constants.InternalErrorReply)
 
 	defer resp.Body.Close()
 

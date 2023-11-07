@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"to-persist/server/form"
 	"to-persist/server/global"
 	"to-persist/server/model"
 	"to-persist/server/util/scheduler"
@@ -57,7 +58,7 @@ func Create(c *gin.Context) {
 
 	tx := global.MysqlDB.Begin()
 	if res := tx.Create(&toper); res.Error != nil {
-		zap.S().Errorf("failed to create toper in mysql: %s", err)
+		zap.S().Errorf("failed to create toper in mysql: %v", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -71,22 +72,23 @@ func Create(c *gin.Context) {
 	}
 
 	toperIDStr := strconv.FormatUint(uint64(toper.ID), 10)
-	_, err = global.RedisClient.Set(context.Background(), toperIDStr, "undone", 0).Result()
+	_, err = global.RedisClient.Set(context.Background(), toperIDStr, global.ToperStatusUndone, 0).Result()
 	if err != nil {
 		tx.Rollback()
-		zap.S().Errorf("failed to set the key of toper ID: %s", err)
+		zap.S().Errorf("failed to set the key of toper ID: %v", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	taskScheduler := scheduler.NewTaskScheduler()
-	err = taskScheduler.AddTask(toperIDStr, expr, scheduler.SetUndone)
+	err = taskScheduler.AddTask(toperIDStr, expr, scheduler.CheckDoneStatus)
 	if err != nil {
 		tx.Rollback()
 		zap.S().Errorf("failed to add task for %d : %s", toper.ID, err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	// todo add a task for regularly checking the toper's completion status
 
 	tx.Commit()
 
@@ -122,14 +124,14 @@ func List(c *gin.Context) {
 		toperID := strconv.FormatUint(uint64(toper.ID), 10)
 		done, err := global.RedisClient.Get(context.Background(), toperID).Result()
 		if err != nil {
-			zap.S().Errorf("failed to get toper id while response list api: %s", err)
+			zap.S().Errorf("failed to get done status from redis while handle list api: %v", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 
-		if done == "done" {
+		if done == global.ToperStatusDone {
 			listResp.Done = "√"
-		} else if done == "undone" {
+		} else if done == global.ToperStatusUndone {
 			listResp.Done = "×"
 		} else {
 			zap.S().Error("the key of 'done' is neither 'done' nor 'undone'")
@@ -149,10 +151,115 @@ func List(c *gin.Context) {
 }
 
 func Done(c *gin.Context) {
+	userID, exists := c.Get("user-id")
+	if !exists {
+		c.Status(http.StatusUnauthorized)
+		zap.S().Error("failed to get user id in gin's context ")
+		return
+	}
 
+	var doneForms []form.DoneForm
+	err := c.ShouldBind(&doneForms)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		zap.S().Error("bad request while done topers: ", err)
+		return
+	}
+
+	//todo: solve the problem that partial toper done status was submit repeatedly
+	// how to response to client-side?
+	tx := global.MysqlDB.Begin()
+	for _, doneForm := range doneForms {
+		var doneHistory model.DoneHistory
+		var toper model.Toper
+
+		res := tx.Where("user_id = ? AND acronym = ?", userID, doneForm.Acronym).First(&toper)
+		if res.RowsAffected == 0 {
+			tx.Rollback()
+			zap.S().Errorf("failed to query any toper that user id is %s and acronym is %s: %v\n",
+				userID, doneForm.Acronym, res.Error)
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		toperID := strconv.FormatUint(uint64(toper.ID), 10)
+		// Query from the redis cache whether the done status is done,
+		// if it is done then the done status of the current cycle has already been committed
+		result, err := global.RedisClient.Get(context.Background(), toperID).Result()
+		if result == global.ToperStatusDone {
+			continue
+		}
+
+		_, err = global.RedisClient.Set(context.Background(), toperID, global.ToperStatusDone, 0).Result()
+		if err != nil {
+			tx.Rollback()
+			zap.S().Errorf("failed to set done status with redis while handle done api: %v", err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		doneHistory.Done = global.ToperStatusDone
+		doneHistory.ToperID = toper.ID
+		res = tx.Create(&doneHistory)
+		if res.RowsAffected == 0 {
+			tx.Rollback()
+			zap.S().Errorf("failed to create the done history that toper id is %d: %v\n",
+				toper.ID, res.Error)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+	tx.Commit()
+
+	c.Status(http.StatusOK)
 }
 
 func History(c *gin.Context) {
+	userID, exists := c.Get("user-id")
+	if !exists {
+		c.Status(http.StatusUnauthorized)
+		zap.S().Error("failed to get user id in gin's context ")
+		return
+	}
+
+	acronym, exists := c.GetQuery("acronym")
+	if !exists {
+		zap.S().Errorf("failed to get query string 'acronym'")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	limit, exists := c.GetQuery("limit")
+	if !exists {
+		zap.S().Errorf("failed to get query string 'limit'")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	var toper model.Toper
+	res := global.MysqlDB.Where("user_id = ? AND acronym = ?", userID, acronym).First(&toper)
+	if res.RowsAffected == 0 {
+		zap.S().Errorf("failed to query any toper that user id is %s and acronym is %s: %v\n",
+			userID, acronym, res.Error)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	var doneHistory []model.DoneHistory
+	limitInt, err := strconv.ParseInt(limit, 10, 0)
+	if err != nil {
+		zap.S().Errorf("failed to parse string to int: %v", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	res = global.MysqlDB.Where("toper_id = ?", toper.ID).Limit(int(limitInt)).Find(&doneHistory)
+	if res.RowsAffected == 0 && res.Error != nil {
+		zap.S().Errorf("failed to query any done history that toper id is %d : %s", toper.ID, res.Error)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, doneHistory)
 
 }
 

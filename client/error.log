@@ -44,3 +44,21 @@
 {"level":"info","time":"2023-11-05T20:25:23.569+0800","msg":"login response body: &{stop:0x513800 rc:0xc00007a080 reqDidTimeout:0x6ced20}"}
 {"level":"info","time":"2023-11-06T20:27:07.047+0800","msg":"login response status: 200 OK"}
 {"level":"info","time":"2023-11-06T20:27:07.047+0800","msg":"login response body: &{stop:0x513800 rc:0xc000216040 reqDidTimeout:0x6ced20}"}
+{"level":"error","time":"2023-11-07T15:33:55.276+0800","msg":"Get \"http://127.0.0.1:8520/v1/toper\": dial tcp 127.0.0.1:8520: connect: connection refused"}
+{"level":"error","time":"2023-11-07T15:34:00.653+0800","msg":"failed to get response, because Get \"http://127.0.0.1:8520/v1/ping\": dial tcp 127.0.0.1:8520: connect: connection refused"}
+{"level":"error","time":"2023-11-07T16:26:16.829+0800","msg":"Get \"http://127.0.0.1:8520/v1/toper\": dial tcp 127.0.0.1:8520: connect: connection refused"}
+{"level":"error","time":"2023-11-07T16:26:22.150+0800","msg":"failed to get response, because Get \"http://127.0.0.1:8520/v1/ping\": dial tcp 127.0.0.1:8520: connect: connection refused"}
+{"level":"error","time":"2023-11-08T00:49:34.249+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T00:52:05.686+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T00:52:25.137+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T00:54:11.817+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T00:54:49.560+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T00:58:21.422+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T01:01:27.266+0800","msg":"unexpected end of JSON input"}
+{"level":"error","time":"2023-11-08T01:03:57.847+0800","msg":"unexpected end of JSON input"}
+{"level":"info","time":"2023-11-08T01:06:43.918+0800","msg":"login response status: 200 OK"}
+{"level":"info","time":"2023-11-08T01:06:43.918+0800","msg":"login response body: &{stop:0x513800 rc:0xc000142840 reqDidTimeout:0x6ced20}"}
+{"level":"error","time":"2023-11-08T01:09:35.969+0800","msg":"failed to get limit flag"}
+{"level":"error","time":"2023-11-08T01:11:48.604+0800","msg":"failed to get limit flag"}
+{"level":"error","time":"2023-11-08T01:12:33.731+0800","msg":"Get \"/toper/history?acronym=np&limit=10\": unsupported protocol scheme \"\""}
+{"level":"error","time":"2023-11-08T01:15:10.006+0800","msg":"Get \"/toper/history?acronym=np&limit=10\": unsupported protocol scheme \"\""}
